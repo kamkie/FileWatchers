@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,6 +29,7 @@ public class Watcher implements Runnable {
         rootFile.mkdirs();
 
         register(rootPath);
+        initFiles();
     }
 
     private void register(Path path) {
@@ -42,6 +44,27 @@ public class Watcher implements Runnable {
         } catch (IOException e) {
             logger.error("cannot create watcher service for path{}", path);
             logger.error("cannot create watcher service", e);
+        }
+    }
+
+    private void initFiles() {
+        try {
+            Files.walkFileTree(rootPath, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult preVisitDirectory(Path path, BasicFileAttributes attrs)
+                        throws IOException {
+                    path.toAbsolutePath().toFile().listFiles(pathname -> {
+                        if (pathname.isFile()) {
+                            logger.info("add file {} from path {}", pathname.toString(), pathname.getName());
+                            files.put(pathname.toPath(), pathname.getName());
+                        }
+                        return false;
+                    });
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
