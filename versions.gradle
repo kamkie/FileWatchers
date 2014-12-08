@@ -1,0 +1,11 @@
+ext {
+    log4jVersion = '2.+'
+    junitVersion = '4.+'
+    jaxrsApiVersion = '2.+'
+    jerseyVersion = '2.+'
+    weldVersion = '2.2.+'
+    weldApiVersion = '2.2.+'
+    grizzlyVersion = '2.+'
+    jettyVersion = '9.2.+'
+    hibernateVersion = '4.+'
+}
