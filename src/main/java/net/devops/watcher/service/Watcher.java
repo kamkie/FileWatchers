@@ -10,6 +10,7 @@ import java.nio.file.*;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 public class Watcher implements Runnable {
 
@@ -30,8 +31,25 @@ public class Watcher implements Runnable {
     }
 
     private void register(Path path) {
+        if (!rootFile.exists()) {
+            rootFile.mkdirs();
+        }
         try {
             watchService = rootPath.getFileSystem().newWatchService();
+            path.register(watchService, new WatchEvent.Kind<?>[]{StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE, StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.OVERFLOW},
+                    ExtendedWatchEventModifier.FILE_TREE);
+            logger.info("path register {}", path);
+        } catch (IOException e) {
+            logger.error("cannot create watcher service for path{}", path);
+            logger.error("cannot create watcher service", e);
+        }
+    }
+
+    private void reInit(Path path) {
+        if (!rootFile.exists()) {
+            rootFile.mkdirs();
+        }
+        try {
             path.register(watchService, new WatchEvent.Kind<?>[]{StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE, StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.OVERFLOW},
                     ExtendedWatchEventModifier.FILE_TREE);
             logger.info("path register {}", path);
@@ -45,9 +63,9 @@ public class Watcher implements Runnable {
     public void run() {
         while (true) {
             try {
-                WatchKey key = watchService.take();
+                reInit(rootPath);
+                WatchKey key = watchService.poll(10, TimeUnit.SECONDS);
                 if (key == null) {
-                    logger.info("continue loop");
                     continue;
                 }
                 if (key.isValid()) {
@@ -77,6 +95,7 @@ public class Watcher implements Runnable {
         }
         if (path.toFile().isFile()) {
             files.put(path, path.getFileName().toString());
+            logger.info("add file {} from path {}", path.getFileName().toString(), path);
         }
     }
 }
