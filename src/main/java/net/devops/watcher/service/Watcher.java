@@ -8,6 +8,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Watcher implements Runnable {
 
@@ -16,6 +18,7 @@ public class Watcher implements Runnable {
     private Path rootPath = Paths.get("dir").toAbsolutePath();
     private File rootFile;
     private WatchService watchService;
+    private Map<Path, String> files = new ConcurrentHashMap<>();
 
     public Watcher() {
         logger.info("watcher start");
@@ -54,7 +57,7 @@ public class Watcher implements Runnable {
 
                         Path toWatch = rootPath.resolve(watchEvent.context()).toAbsolutePath();
                         logger.info("count {}\tkind {}\tcontext {}\t", watchEvent.count(), watchEvent.kind(), toWatch);
-                        checkDir(toWatch);
+                        checkEvent(watchEvent, toWatch);
                     }
                 }
                 boolean reset = key.reset();
@@ -65,9 +68,15 @@ public class Watcher implements Runnable {
         }
     }
 
-    private void checkDir(Path path) {
-        if (path.toFile().isDirectory()) {
-            //register(path);
+    private void checkEvent(WatchEvent<Path> watchEvent, Path path) {
+        if (watchEvent.kind().equals(StandardWatchEventKinds.ENTRY_DELETE)) {
+            files.entrySet().stream().filter(file -> file.getKey().startsWith(path)).forEach(file -> {
+                files.remove(file.getKey());
+                logger.info("remove file {} from path {}", file.getKey(), path);
+            });
+        }
+        if (path.toFile().isFile()) {
+            files.put(path, path.getFileName().toString());
         }
     }
 }
