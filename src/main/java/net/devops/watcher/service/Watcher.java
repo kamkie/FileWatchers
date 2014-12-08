@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -53,12 +54,9 @@ public class Watcher implements Runnable {
                 @Override
                 public FileVisitResult preVisitDirectory(Path path, BasicFileAttributes attrs)
                         throws IOException {
-                    path.toAbsolutePath().toFile().listFiles(pathname -> {
-                        if (pathname.isFile()) {
-                            logger.info("add file {} from path {}", pathname.toString(), pathname.getName());
-                            files.put(pathname.toPath(), pathname.getName());
-                        }
-                        return false;
+                    Arrays.stream(path.toAbsolutePath().toFile().listFiles(pathname -> pathname.isFile())).forEach(file -> {
+                        logger.info("add file {} from path {}", file.getName(), file.toPath().toAbsolutePath());
+                        files.put(file.toPath(), file.getName());
                     });
                     return FileVisitResult.CONTINUE;
                 }
