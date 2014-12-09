@@ -13,7 +13,7 @@ public class Main {
 
     public Main() {
         Watcher watcher = new Watcher();
-        thread = new Thread(watcher);
+        thread = new Thread(watcher, "Watcher Thread");
         thread.start();
     }
 
